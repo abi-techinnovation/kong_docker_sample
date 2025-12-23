@@ -3,9 +3,9 @@ services:
     image: postgres:13
     container_name: kong-database
     environment:
-      POSTGRES_USER: kong
-      POSTGRES_DB: kong
-      POSTGRES_PASSWORD: kongpass
+      POSTGRES_USER: ${POSTGRES_USER:-kong}
+      POSTGRES_DB: ${POSTGRES_DB:-kong}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kongpass}
     ports:
       - "5432:5432"
     volumes:
@@ -23,11 +23,11 @@ services:
     container_name: kong-migration
     command: kong migrations bootstrap
     environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: kongpass
-      KONG_PG_DATABASE: kong
+      KONG_DATABASE: ${KONG_DATABASE:-postgres}
+      KONG_PG_HOST: ${KONG_PG_HOST:-kong-database}
+      KONG_PG_USER: ${KONG_PG_USER:-kong}
+      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kongpass}
+      KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong}
     networks:
       - kong-net
     depends_on:
@@ -39,11 +39,11 @@ services:
     image: kong:3.4
     container_name: kong
     environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: kongpass
-      KONG_PG_DATABASE: kong
+      KONG_DATABASE: ${KONG_DATABASE:-postgres}
+      KONG_PG_HOST: ${KONG_PG_HOST:-kong-database}
+      KONG_PG_USER: ${KONG_PG_USER:-kong}
+      KONG_PG_PASSWORD: ${KONG_PG_PASSWORD:-kongpass}
+      KONG_PG_DATABASE: ${KONG_PG_DATABASE:-kong}
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr

@@ -132,13 +132,15 @@ curl http://localhost:8001/routes
 
 ### Environment Variables
 
-You can customize the configuration by creating a `.env` file:
+The docker-compose configuration supports environment variables for secure credential management. You can customize the configuration by creating a `.env` file:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit the `.env` file to change database credentials or other settings.
+Edit the `.env` file to change database credentials or other settings. All sensitive values have default fallbacks, but it's recommended to set custom values in production.
+
+**Important**: Never commit the `.env` file to version control. It's already included in `.gitignore`.
 
 ### Kong Configuration
 

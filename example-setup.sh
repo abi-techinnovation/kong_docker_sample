@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # Example script to configure Kong with a sample service and route
 # This demonstrates basic Kong functionality
 
@@ -20,7 +21,11 @@ SERVICE_RESPONSE=$(curl -s -X POST http://localhost:8001/services \
   --data name=example-service \
   --data url='http://httpbin.org')
 
-SERVICE_ID=$(echo $SERVICE_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])")
+if ! SERVICE_ID=$(echo "$SERVICE_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])" 2>/dev/null); then
+    echo "❌ Failed to create service"
+    echo "Response: $SERVICE_RESPONSE"
+    exit 1
+fi
 echo "✅ Service created with ID: $SERVICE_ID"
 echo ""
 
@@ -30,7 +35,11 @@ ROUTE_RESPONSE=$(curl -s -X POST http://localhost:8001/services/example-service/
   --data 'paths[]=/mock' \
   --data name=example-route)
 
-ROUTE_ID=$(echo $ROUTE_RESPONSE | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])")
+if ! ROUTE_ID=$(echo "$ROUTE_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])" 2>/dev/null); then
+    echo "❌ Failed to create route"
+    echo "Response: $ROUTE_RESPONSE"
+    exit 1
+fi
 echo "✅ Route created with ID: $ROUTE_ID"
 echo ""
 
