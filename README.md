@@ -43,7 +43,7 @@ cd kong_docker_sample
 ### 2. Start Kong Gateway
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 This will:
@@ -60,6 +60,16 @@ curl -i http://localhost:8001/
 ```
 
 You should see Kong's Admin API response with status information.
+
+### 4. (Optional) Run Example Configuration
+
+To quickly set up a sample service with plugins:
+
+```bash
+./example-setup.sh
+```
+
+This script creates an example service, route, and enables rate limiting and CORS plugins.
 
 ## Service Ports
 
@@ -140,37 +150,37 @@ Kong can be further configured through environment variables in the `docker-comp
 
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Kong Gateway only
-docker-compose logs -f kong
+docker compose logs -f kong
 
 # Database only
-docker-compose logs -f kong-database
+docker compose logs -f kong-database
 ```
 
 ### Stop Services
 
 ```bash
-docker-compose stop
+docker compose stop
 ```
 
 ### Start Services
 
 ```bash
-docker-compose start
+docker compose start
 ```
 
 ### Restart Services
 
 ```bash
-docker-compose restart
+docker compose restart
 ```
 
 ### Remove Everything
 
 ```bash
-docker-compose down -v
+docker compose down -v
 ```
 
 **Warning**: The `-v` flag removes volumes, which deletes all database data.
@@ -228,13 +238,13 @@ ports:
 Check if the database is healthy:
 
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 View database logs:
 
 ```bash
-docker-compose logs kong-database
+docker compose logs kong-database
 ```
 
 ### Reset Everything
@@ -242,8 +252,8 @@ docker-compose logs kong-database
 To start fresh:
 
 ```bash
-docker-compose down -v
-docker-compose up -d
+docker compose down -v
+docker compose up -d
 ```
 
 ## Resources
