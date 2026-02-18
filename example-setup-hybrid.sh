@@ -16,15 +16,33 @@ echo "✅ Kong Control Plane is ready!"
 echo ""
 
 # Wait for Data Planes to be ready
-echo "⏳ Waiting for Kong Data Planes to be ready..."
-sleep 5
-echo "✅ Data Planes should be connected!"
+echo "⏳ Waiting for Kong Data Planes to connect..."
+MAX_WAIT=30
+WAITED=0
+while [ $WAITED -lt $MAX_WAIT ]; do
+    DP_COUNT=$(curl -s http://localhost:8001/clustering/status 2>/dev/null | grep -o '"hostname"' | wc -l || echo 0)
+    if [ "$DP_COUNT" -ge 2 ]; then
+        echo "✅ Data Planes connected successfully!"
+        break
+    fi
+    echo "   Waiting for Data Planes to connect... ($WAITED/$MAX_WAIT seconds)"
+    sleep 2
+    WAITED=$((WAITED + 2))
+done
+
+if [ "$DP_COUNT" -lt 2 ]; then
+    echo "⚠️  Warning: Expected 2 Data Planes, found $DP_COUNT. Continuing anyway..."
+fi
 echo ""
 
 # Check cluster status
 echo "📊 Checking cluster status..."
 CLUSTER_STATUS=$(curl -s http://localhost:8001/clustering/status)
-echo "$CLUSTER_STATUS" | python3 -c "import sys, json; data = json.load(sys.stdin); print(f'Connected Data Planes: {len(data.get(\"data\", []))}')" 2>/dev/null || echo "Unable to parse cluster status"
+if command -v python3 > /dev/null 2>&1; then
+    echo "$CLUSTER_STATUS" | python3 -c "import sys, json; data = json.load(sys.stdin); print(f'Connected Data Planes: {len(data)}')" 2>/dev/null || echo "$CLUSTER_STATUS" | grep -o '"hostname"' | wc -l | xargs echo "Connected Data Planes:"
+else
+    echo "$CLUSTER_STATUS" | grep -o '"hostname"' | wc -l | xargs echo "Connected Data Planes:"
+fi
 echo ""
 
 # Create a service pointing to httpbin.org
@@ -33,7 +51,14 @@ SERVICE_RESPONSE=$(curl -s -X POST http://localhost:8001/services \
   --data name=example-service \
   --data url='http://httpbin.org')
 
-if ! SERVICE_ID=$(echo "$SERVICE_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])" 2>/dev/null); then
+if command -v python3 > /dev/null 2>&1; then
+    SERVICE_ID=$(echo "$SERVICE_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])" 2>/dev/null)
+else
+    # Fallback: extract id using grep/sed if python3 is not available
+    SERVICE_ID=$(echo "$SERVICE_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | sed 's/"id":"//;s/"//')
+fi
+
+if [ -z "$SERVICE_ID" ]; then
     echo "❌ Failed to create service"
     echo "Response: $SERVICE_RESPONSE"
     exit 1
@@ -47,7 +72,14 @@ ROUTE_RESPONSE=$(curl -s -X POST http://localhost:8001/services/example-service/
   --data 'paths[]=/mock' \
   --data name=example-route)
 
-if ! ROUTE_ID=$(echo "$ROUTE_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])" 2>/dev/null); then
+if command -v python3 > /dev/null 2>&1; then
+    ROUTE_ID=$(echo "$ROUTE_RESPONSE" | python3 -c "import sys, json; print(json.load(sys.stdin)['id'])" 2>/dev/null)
+else
+    # Fallback: extract id using grep/sed if python3 is not available
+    ROUTE_ID=$(echo "$ROUTE_RESPONSE" | grep -o '"id":"[^"]*"' | head -1 | sed 's/"id":"//;s/"//')
+fi
+
+if [ -z "$ROUTE_ID" ]; then
     echo "❌ Failed to create route"
     echo "Response: $ROUTE_RESPONSE"
     exit 1

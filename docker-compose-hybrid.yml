@@ -191,6 +191,7 @@ services:
         cp /tmp/cluster.key /certs/cluster.key;
         chmod 644 /certs/cluster.crt;
         chmod 644 /certs/cluster.key;
+        chown 1000:1000 /certs/cluster.crt /certs/cluster.key;
         echo 'Certificates generated successfully';
       else
         echo 'Certificates already exist, skipping generation';
