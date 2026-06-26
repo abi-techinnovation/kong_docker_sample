@@ -19,7 +19,7 @@ services:
 
   # Kong Database Migration
   kong-migration-cp:
-    image: kong:3.4
+    image: kong/kong-gateway:3.14
     container_name: kong-migration-cp
     command: kong migrations bootstrap
     environment:
@@ -37,7 +37,7 @@ services:
 
   # Kong Control Plane
   kong-cp:
-    image: kong:3.4
+    image: kong/kong-gateway:3.14
     container_name: kong-cp
     environment:
       # Role Configuration
@@ -91,7 +91,7 @@ services:
 
   # Kong Data Plane 1
   kong-dp-1:
-    image: kong:3.4
+    image: kong/kong-gateway:3.14
     container_name: kong-dp-1
     environment:
       # Role Configuration
@@ -134,7 +134,7 @@ services:
 
   # Kong Data Plane 2
   kong-dp-2:
-    image: kong:3.4
+    image: kong/kong-gateway:3.14
     container_name: kong-dp-2
     environment:
       # Role Configuration
@@ -177,7 +177,7 @@ services:
 
   # Certificate Generator for Hybrid Mode
   kong-cert-generator:
-    image: kong:3.4
+    image: kong/kong-gateway:3.14
     container_name: kong-cert-generator
     user: root
     command: >
