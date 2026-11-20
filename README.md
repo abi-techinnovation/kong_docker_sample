@@ -6,6 +6,8 @@ This repository includes two deployment modes:
 - **Traditional Mode**: Single Kong Gateway instance with PostgreSQL database
 - **Hybrid Mode**: Control Plane and Data Plane architecture for distributed deployments
 
+It also includes a separate **AI Gateway** image (`ai-gateway/`) that runs as a Konnect Data Plane. See [AI Gateway Image](#ai-gateway-image).
+
 ## Overview
 
 This project provides complete Kong Gateway setups with:
@@ -162,6 +164,37 @@ To quickly set up a sample service with plugins:
 ```
 
 This script creates an example service, route, and enables rate limiting and CORS plugins. The configuration will be automatically synchronized to all Data Planes.
+
+## AI Gateway Image
+
+The `ai-gateway/` directory is independent of the Docker Compose setups above. They run Kong Gateway (`kong/kong-gateway`), while `ai-gateway/` builds an image based on `kong/kong-ai-gateway` that connects to Kong Konnect as a Data Plane.
+
+| File | Description |
+|------|-------------|
+| `ai-gateway/Dockerfile` | Builds the Konnect Data Plane image. Sets the Data Plane environment variables (DB-less, mTLS to the Konnect Control Plane) and copies the cluster certificate. |
+| `ai-gateway/parse-tls.sh` | Validates a private key (default: `certs/tls.key`) and prints it as a single-line base64 string. |
+| `ai-gateway/upload-sakura.sh` | Builds the image for `linux/amd64` and pushes it to a private container registry. |
+| `ai-gateway/certs/` | Holds `tls.crt` and `tls.key`. Excluded from git (`*/certs` in `.gitignore`). |
+
+### Build
+
+Place the Data Plane certificate at `ai-gateway/certs/tls.crt`, then build:
+
+```bash
+docker build --platform linux/amd64 -t konnect-ai-gateway ai-gateway
+```
+
+The build fails if `ai-gateway/certs/tls.crt` is missing. Never commit the certificate or the private key.
+
+### Publish to the Private Registry
+
+Set the registry host name in the `REGISTRY` environment variable and run the script. The script asks for your registry credentials through `docker login`.
+
+```bash
+REGISTRY=<registry-host> ./ai-gateway/upload-sakura.sh
+```
+
+The image is pushed as `$REGISTRY/konnect-ai-gateway:latest`. The script stops with an error if `REGISTRY` is not set.
 
 ## Service Ports
 
