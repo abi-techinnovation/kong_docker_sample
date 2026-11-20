@@ -174,6 +174,9 @@ The `ai-gateway/` directory is independent of the Docker Compose setups above. T
 | `ai-gateway/Dockerfile` | Builds the Konnect Data Plane image. Sets the Data Plane environment variables (DB-less, mTLS to the Konnect Control Plane) and copies the cluster certificate. |
 | `ai-gateway/parse-tls.sh` | Validates a private key (default: `certs/tls.key`) and prints it as a single-line base64 string. |
 | `ai-gateway/upload-sakura.sh` | Builds the image for `linux/amd64` and pushes it to a private container registry. |
+| `ai-gateway/deploy-apprun.sh` | Builds and pushes the image, then creates or updates the Sakura AppRun (shared) application and its packet filter. |
+| `ai-gateway/apprun.env.example` | Template for `ai-gateway/.env`, which holds the settings for `deploy-apprun.sh`. |
+| `ai-gateway/packet-filter.example.txt` | Template for `ai-gateway/packet-filter.txt`, the list of source IPs allowed by the packet filter. |
 | `ai-gateway/certs/` | Holds `tls.crt` and `tls.key`. Excluded from git (`*/certs` in `.gitignore`). |
 
 ### Build
@@ -194,7 +197,49 @@ Set the registry host name in the `REGISTRY` environment variable and run the sc
 REGISTRY=<registry-host> ./ai-gateway/upload-sakura.sh
 ```
 
-The image is pushed as `$REGISTRY/konnect-ai-gateway:latest`. The script stops with an error if `REGISTRY` is not set.
+The image is pushed as `$REGISTRY/konnect-ai-gateway:$TAG` (`TAG` defaults to `latest`). If `REGISTRY_USER` and `REGISTRY_PASSWORD` are set, the script logs in without prompting. The script stops with an error if `REGISTRY` is not set.
+
+### Deploy to Sakura AppRun
+
+`deploy-apprun.sh` deploys the image to AppRun (shared) through the AppRun API. Each run does the following:
+
+1. Builds the image and pushes it with a unique tag (`<timestamp>-<commit>`), using `upload-sakura.sh`.
+2. Creates the application if none has the name `APP_NAME`. Otherwise it updates the application to a new version and sends all traffic to it.
+3. Passes the private key (`certs/tls.key`) as the secret `KONG_CLUSTER_CERT_KEY`, base64-encoded by `parse-tls.sh`.
+4. Applies the packet filter from `packet-filter.txt`.
+5. Waits until the application becomes `Healthy`, then prints its public URL.
+
+Prepare the settings and the packet filter. Both files are excluded from git.
+
+```bash
+cp ai-gateway/apprun.env.example ai-gateway/.env                  # then fill in the values
+cp ai-gateway/packet-filter.example.txt ai-gateway/packet-filter.txt  # then list the allowed IPs
+```
+
+`packet-filter.txt` takes one IPv4 CIDR per line, up to 10 entries. Lines starting with `#` are ignored.
+
+Check the request bodies without building or calling the API (secrets are masked):
+
+```bash
+DRY_RUN=1 ./ai-gateway/deploy-apprun.sh
+```
+
+Deploy:
+
+```bash
+./ai-gateway/deploy-apprun.sh
+```
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `REGISTRY`, `REGISTRY_USER`, `REGISTRY_PASSWORD` | Yes | | Container registry host and credentials. AppRun uses them to pull the image. |
+| `SAKURA_ACCESS_TOKEN`, `SAKURA_ACCESS_TOKEN_SECRET` | Yes | | Sakura Cloud API key. |
+| `APP_NAME` | No | `konnect-ai-gateway` | AppRun application name. |
+| `MIN_SCALE` / `MAX_SCALE` | No | `1` / `1` | Instance count. `MIN_SCALE` must be 1 or more, because the Data Plane loses its connection to Konnect when scaled to zero. |
+| `MAX_CPU` / `MAX_MEMORY` | No | `1` / `2Gi` | Resources per instance. |
+| `TIMEOUT_SECONDS` | No | `300` | Request timeout (1-300). |
+
+AppRun forwards traffic to port 8000 (the Kong HTTP proxy). Port 8443 is not exposed.
 
 ## Service Ports
 
