@@ -16,3 +16,6 @@ Thumbs.db
 *~
 
 */certs
+
+# AppRun のパケットフィルタ（許可する送信元 IP）
+ai-gateway/packet-filter.txt
